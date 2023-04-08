@@ -48,8 +48,8 @@ Java_com_windula_mv_1cpp_1android_1digital_1ruler_MainActivity_calibrationFromJN
                         totalTime);
 }
 
-extern "C" JNIEXPORT void JNICALL
-Java_com_windula_mv_1cpp_1android_1digital_1ruler_CalibrateActivity_calibrationFromJNI(JNIEnv *env,
+extern "C" JNIEXPORT jstring  JNICALL
+Java_com_windula_mv_1cpp_1android_1digital_1ruler_CalibrateActivity_00024NativeBridge_calibrationFromJNI(JNIEnv *env,
                                                                                   jobject instance,
                                                                                   jlong matAddr,jfloat width,jfloat height) {
 
@@ -60,10 +60,13 @@ Java_com_windula_mv_1cpp_1android_1digital_1ruler_CalibrateActivity_calibrationF
 
     clock_t begin = clock();
 
-    calibrationObject(mat,objectWidth,objectHeight);
+    double refObjectPXPerCM = calibrationObject(mat,objectWidth,objectHeight);
 
+    string value = to_string(refObjectPXPerCM);
     // log computation time to Android Logcat
     double totalTime = double(clock() - begin) / CLOCKS_PER_SEC;
-    __android_log_print(ANDROID_LOG_INFO, TAG, "adaptiveThreshold computation time = %f seconds\n",
+    __android_log_print(ANDROID_LOG_INFO, TAG, "Calibration computation time = %f seconds\n",
                         totalTime);
+
+    return env->NewStringUTF(value.c_str());
 }

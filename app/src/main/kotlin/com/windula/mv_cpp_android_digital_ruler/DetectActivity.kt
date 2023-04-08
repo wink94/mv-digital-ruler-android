@@ -2,27 +2,32 @@ package com.windula.mv_cpp_android_digital_ruler
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.AttributeSet
 import androidx.core.app.ActivityCompat
 import android.util.Log
+import android.view.MotionEvent
 import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.Toast
 import com.google.android.material.snackbar.Snackbar
 import com.windula.mv_cpp_android_digital_ruler.databinding.CameraCalibrateBinding
-import org.opencv.android.BaseLoaderCallback
-import org.opencv.android.CameraBridgeViewBase
-import org.opencv.android.LoaderCallbackInterface
-import org.opencv.android.OpenCVLoader
+import com.windula.mv_cpp_android_digital_ruler.databinding.CameraDetectBinding
+import org.opencv.android.*
 import org.opencv.core.Mat
+import org.opencv.core.Point
+import org.opencv.core.Scalar
+import org.opencv.imgproc.Imgproc
 
-class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {
+class DetectActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
     private var mOpenCvCameraView: CameraBridgeViewBase? = null
-    private lateinit var binding: CameraCalibrateBinding
+    private lateinit var binding: CameraDetectBinding
     private var refObjectPXPerCM:String = "0.000"
+    private val points = mutableListOf<Point>()
 
     private val mLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -49,14 +54,17 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
 
 //         Permissions for Android 6+
         ActivityCompat.requestPermissions(
-            this@CalibrateActivity,
+            this@DetectActivity,
             arrayOf(Manifest.permission.CAMERA),
             CAMERA_PERMISSION_REQUEST
         )
 
-        binding = CameraCalibrateBinding.inflate(layoutInflater)
+        binding = CameraDetectBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
+        val overlayView = findViewById<OverlayView>(R.id.overlay_view)
+        overlayView.setWillNotDraw(false)
 
         mOpenCvCameraView = findViewById<CameraBridgeViewBase>(R.id.main_surface)
 
@@ -64,24 +72,41 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
 
         mOpenCvCameraView!!.setCvCameraViewListener(this)
 
+        refObjectPXPerCM = intent.getStringExtra("refObjectPXPerCM").toString()
 
-        binding.captureButton.setOnClickListener {
-            val refObjectPXPerCMDouble: Double? = refObjectPXPerCM.toDoubleOrNull()
-            if (refObjectPXPerCMDouble != null) {
-                if (refObjectPXPerCMDouble>0){
-                    val resultIntent = Intent()
-                    resultIntent.putExtra("refObjectPXPerCM", refObjectPXPerCM)
-                    setResult(Activity.RESULT_OK, resultIntent)
-                    finish()
-                }
-                else{
-                    // Implement the capture functionality here
-                    Snackbar.make(binding.mainSurface, "Error in calibration, please retry", Snackbar.LENGTH_LONG).show()
+//        points.add(Point(255.2, 100.0))
+//        points.add(Point(25.2, 10.0))
+        val refObjectPXPerCMDouble: Double? = refObjectPXPerCM?.toDoubleOrNull()
+        if (refObjectPXPerCMDouble != null) {
+            if (refObjectPXPerCMDouble>0){
+                overlayView.setRefObjectPXPerCM(refObjectPXPerCMDouble)
 
-                }
             }
-
         }
+//        binding.captureButton.setOnClickListener {
+//            val refObjectPXPerCMDouble: Double? = refObjectPXPerCM.toDoubleOrNull()
+//            if (refObjectPXPerCMDouble != null) {
+//                if (refObjectPXPerCMDouble>0){
+//                    val resultIntent = Intent()
+//                    resultIntent.putExtra("refObjectPXPerCM", refObjectPXPerCM)
+//                    setResult(Activity.RESULT_OK, resultIntent)
+//                    finish()
+//                }
+//                else{
+//                    // Implement the capture functionality here
+//                    Snackbar.make(binding.mainSurface, "Error in calibration, please retry", Snackbar.LENGTH_LONG).show()
+//
+//                }
+//            }
+//
+//        }
+    }
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+
+        if (event.action == MotionEvent.ACTION_DOWN && points.size < 2) {
+            points.add(Point(event.x.toDouble(), event.y.toDouble()))
+        }
+        return super.onTouchEvent(event)
     }
 
     override fun onRequestPermissionsResult(
@@ -134,24 +159,23 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
 
     override fun onCameraFrame(frame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
 //         get current camera frame as OpenCV Mat object
-        val mat = frame.gray()
+        val mat = frame.rgba()
 
-       refObjectPXPerCM = NativeBridge.calibrationFromJNI(mat.nativeObjAddr,6f,0f)
+        if (points.size == 2) {
+            val point1 = points[0]
+            val point2 = points[1]
+            val lineColor = Scalar(255.0, 0.0, 0.0) // Red color
+            val lineWidth = 5
 
-        Log.d(TAG, "refObjectPXPerCM ${refObjectPXPerCM}")
+            Imgproc.line(mat, point1, point2, lineColor, lineWidth)
+        }
+
 //         return processed frame for live preview
         return mat
     }
 
 //    private external fun calibrationFromJNI(matAddr: Long,width:Float,height:Float)
 
-    object NativeBridge {
-        init {
-            System.loadLibrary("mv_cpp_android_digital_ruler")
-        }
-
-        external fun calibrationFromJNI(matAddr: Long,width:Float,height:Float):String
-    }
 
     companion object {
 
