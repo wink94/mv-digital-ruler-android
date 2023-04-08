@@ -82,7 +82,7 @@ double calculateDistanceFromPoint2d(cv::Point2d ptA, cv::Point2d ptB) {
     return dist;
 }
 
-int calibrationObject(Mat frame,double width = 6,double height = 3) {
+void calibrationObject(Mat frame,double width = 6,double height = 3) {
 
     double ref_object_px_per_cm = 0;
     HomogeneousBgDetector detector;

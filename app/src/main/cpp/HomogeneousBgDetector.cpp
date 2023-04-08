@@ -1,16 +1,15 @@
 
 #include "HomogeneousBgDetector.h"
 
+using namespace std;
 
 HomogeneousBgDetector::HomogeneousBgDetector()
 {
 }
 
-std::vector<std::vector<cv::Point>> HomogeneousBgDetector::detect_objects(cv::Mat frame)
+std::vector<std::vector<cv::Point>> HomogeneousBgDetector::detect_objects(cv::Mat gray)
 {
     // Convert Image to grayscale
-    cv::Mat gray = frame;
-//    cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
 
     // Create a Mask with adaptive threshold
     cv::Mat mask;
