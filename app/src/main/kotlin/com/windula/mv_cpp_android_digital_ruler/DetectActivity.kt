@@ -20,6 +20,7 @@ import org.opencv.android.*
 import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.core.Scalar
+import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 
 class DetectActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {
@@ -74,8 +75,6 @@ class DetectActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
         refObjectPXPerCM = intent.getStringExtra("refObjectPXPerCM").toString()
 
-//        points.add(Point(255.2, 100.0))
-//        points.add(Point(25.2, 10.0))
         val refObjectPXPerCMDouble: Double? = refObjectPXPerCM?.toDoubleOrNull()
         if (refObjectPXPerCMDouble != null) {
             if (refObjectPXPerCMDouble>0){
@@ -179,7 +178,7 @@ class DetectActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
     companion object {
 
-        private const val TAG = "CalibrateActivity"
+        private const val TAG = "DetectActivity"
         private const val CAMERA_PERMISSION_REQUEST = 1
     }
 }

@@ -6,6 +6,15 @@
     android:layout_height="match_parent"
     tools:context=".DetectActivity">
 
+        <org.opencv.android.JavaCameraView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:id="@+id/main_surface" />
+
         <com.windula.mv_cpp_android_digital_ruler.OverlayView
             android:id="@+id/overlay_view"
             android:layout_width="match_parent"
@@ -15,16 +24,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
-
-
-        <org.opencv.android.JavaCameraView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:id="@+id/main_surface" />
 
         <Button
             android:id="@+id/calculate_distance_button"

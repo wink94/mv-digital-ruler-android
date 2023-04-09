@@ -9,6 +9,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
+import kotlin.math.sqrt
 
 class OverlayView: View {
 
@@ -51,9 +52,16 @@ class OverlayView: View {
             val midX = (points[0].x + points[1].x) / 2
             val midY = (points[0].y + points[1].y) / 2
 
+            val distance = calculateDistance(points[0],points[1])
             // Draw text on the line
-            canvas.drawText("Text on line", midX, midY, textPaint)
+            canvas.drawText("Distance : ${distance}", midX, midY, textPaint)
         }
+    }
+
+    fun calculateDistance(point1: PointF, point2: PointF): Float {
+        val deltaX = point2.x - point1.x
+        val deltaY = point2.y - point1.y
+        return sqrt(deltaX * deltaX + deltaY * deltaY)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
