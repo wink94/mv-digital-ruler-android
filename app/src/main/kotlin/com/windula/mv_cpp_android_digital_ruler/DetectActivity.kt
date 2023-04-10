@@ -157,14 +157,14 @@ class DetectActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {
 //         get current camera frame as OpenCV Mat object
         val mat = frame.rgba()
 
-        if (points.size == 2) {
-            val point1 = points[0]
-            val point2 = points[1]
-            val lineColor = Scalar(255.0, 0.0, 0.0) // Red color
-            val lineWidth = 5
-
-            Imgproc.line(mat, point1, point2, lineColor, lineWidth)
-        }
+//        if (points.size == 2) {
+//            val point1 = points[0]
+//            val point2 = points[1]
+//            val lineColor = Scalar(255.0, 0.0, 0.0) // Red color
+//            val lineWidth = 5
+//
+//            Imgproc.line(mat, point1, point2, lineColor, lineWidth)
+//        }
 
 //         return processed frame for live preview
         return mat
