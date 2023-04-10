@@ -120,6 +120,27 @@ double calibrationObject(Mat frame,double width = 6,double height = 3) {
         cv::Point2f tlbl = midpoint(tl, bl);
         cv::Point2f trbr = midpoint(tr, br);
 
+        std::vector<cv::Point2f> src_points = {tl, tr, br, bl};
+        std::vector<cv::Point2f> dst_points;
+
+        float widthTD = cv::norm(tr - tl);
+        float heightTD = cv::norm(br - tr);
+
+// Create the destination rectangle (desired top view)
+        dst_points.push_back(cv::Point2f(0, 0));
+        dst_points.push_back(cv::Point2f(width, 0));
+        dst_points.push_back(cv::Point2f(width, height));
+        dst_points.push_back(cv::Point2f(0, height));
+
+// Calculate the perspective transformation matrix
+        cv::Mat perspective_transform = cv::getPerspectiveTransform(src_points, dst_points);
+
+        std::vector<cv::Point2f> top_down_points;
+        cv::perspectiveTransform(src_points, top_down_points, perspective_transform);
+// Apply the perspective transformation
+        cv::Mat top_down_view;
+        cv::warpPerspective(frame, frame, perspective_transform, cv::Size(widthTD, heightTD));
+
         double ref_object_px = cv::norm(tlbl - trbr);
 
         if (ref_object_px != 0 && width != 0)
