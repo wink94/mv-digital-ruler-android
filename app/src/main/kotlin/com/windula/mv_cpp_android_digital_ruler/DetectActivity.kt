@@ -2,25 +2,22 @@ package com.windula.mv_cpp_android_digital_ruler
 
 import android.Manifest
 import android.app.Activity
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.AttributeSet
-import androidx.core.app.ActivityCompat
 import android.util.Log
 import android.view.MotionEvent
 import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.Toast
-import com.google.android.material.snackbar.Snackbar
-import com.windula.mv_cpp_android_digital_ruler.databinding.CameraCalibrateBinding
+import androidx.core.app.ActivityCompat
 import com.windula.mv_cpp_android_digital_ruler.databinding.CameraDetectBinding
-import org.opencv.android.*
+import org.opencv.android.BaseLoaderCallback
+import org.opencv.android.CameraBridgeViewBase
+import org.opencv.android.LoaderCallbackInterface
+import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.core.Scalar
-import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 
 class DetectActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {

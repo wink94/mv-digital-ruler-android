@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -19,6 +20,8 @@ class MainActivity : AppCompatActivity() {
     private val DETECT = "DETECT"
     private var isCalibrare = false
     private var isDetect = false
+    private var width:Double = 0.0
+    private var height:Double = 0.0
 
     private lateinit var binding: ActivityMainBinding
 
@@ -41,6 +44,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+        val editWidth:EditText = binding.editTextWidth
+        val editHeight:EditText = binding.editTextHeight
 
         binding.fab1.setOnClickListener {
             checkCameraPermissionAndOpenCamera(CALIBRATE)
@@ -52,6 +57,13 @@ class MainActivity : AppCompatActivity() {
             checkCameraPermissionAndOpenCamera(DETECT)
             isCalibrare=false
             isDetect = true
+        }
+
+        binding.buttonSubmit.setOnClickListener{
+            width = editWidth.text.toString().toDouble()
+            height = editHeight.text.toString().toDouble()
+            Toast.makeText(this, "Reference object Width : $width  and Height : $height ", Toast.LENGTH_LONG).show()
+
         }
     }
 
@@ -71,6 +83,8 @@ class MainActivity : AppCompatActivity() {
         Snackbar.make(binding.mainContainer, "Camera opened ", Snackbar.LENGTH_LONG).show()
         if (action==CALIBRATE){
             val intent = Intent(this, CalibrateActivity::class.java)
+            intent.putExtra("width",width)
+            intent.putExtra("height",height)
             calibrateActivityLauncher.launch(intent)
         }
         if (action==DETECT){

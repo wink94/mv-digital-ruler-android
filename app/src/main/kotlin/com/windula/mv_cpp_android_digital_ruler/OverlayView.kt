@@ -53,8 +53,17 @@ class OverlayView: View {
             val midY = (points[0].y + points[1].y) / 2
 
             val distance = calculateDistance(points[0],points[1])
-            // Draw text on the line
-            canvas.drawText("Distance : ${distance}", midX, midY, textPaint)
+
+            if (refObjectPXPerCM!! >0) {
+                // Draw text on the line
+                val distanceString = "%.3f".format(distance / refObjectPXPerCM!!)
+                canvas.drawText(
+                    "Distance in cm : $distanceString",
+                    midX,
+                    midY,
+                    textPaint
+                )
+            }
         }
     }
 

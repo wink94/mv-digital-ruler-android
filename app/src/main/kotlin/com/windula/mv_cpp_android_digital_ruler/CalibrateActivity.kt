@@ -2,14 +2,21 @@ package com.windula.mv_cpp_android_digital_ruler
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.os.Bundle
-import androidx.core.app.ActivityCompat
 import android.util.Log
 import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import com.google.android.material.snackbar.Snackbar
 import com.windula.mv_cpp_android_digital_ruler.databinding.CameraCalibrateBinding
 import org.opencv.android.BaseLoaderCallback
@@ -23,6 +30,11 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
     private var mOpenCvCameraView: CameraBridgeViewBase? = null
     private lateinit var binding: CameraCalibrateBinding
     private var refObjectPXPerCM:String = "0.000"
+    private var width:Double = 0.0
+    private var height:Double = 0.0
+    private lateinit var sensorManager: SensorManager
+    private lateinit var orientationListener: SensorEventListener
+    private var currentRotation = 0
 
     private val mLoaderCallback = object : BaseLoaderCallback(this) {
         override fun onManagerConnected(status: Int) {
@@ -64,6 +76,8 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
 
         mOpenCvCameraView!!.setCvCameraViewListener(this)
 
+        width=intent.getDoubleExtra("width",0.0)
+        height=intent.getDoubleExtra("height",0.0)
 
         binding.captureButton.setOnClickListener {
             val refObjectPXPerCMDouble: Double? = refObjectPXPerCM.toDoubleOrNull()
@@ -82,6 +96,33 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
             }
 
         }
+
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        orientationListener = object : SensorEventListener {
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+                // Not needed
+            }
+
+            override fun onSensorChanged(event: SensorEvent?) {
+                if (event == null) return
+
+                val rotation = when {
+                    event.values[0] < 45 || event.values[0] > 315 -> 0
+                    event.values[0] > 45 && event.values[0] < 135 -> 90
+                    event.values[0] > 135 && event.values[0] < 225 -> 180
+                    else -> 270
+                }
+
+                if (currentRotation != rotation) {
+                    currentRotation = rotation
+//                    updateCameraDisplayOrientation()
+                }
+            }
+        }
+
+        val orientationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION)
+        sensorManager.registerListener(orientationListener, orientationSensor, SensorManager.SENSOR_DELAY_NORMAL)
+
     }
 
     override fun onRequestPermissionsResult(
@@ -107,12 +148,15 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
 
     override fun onPause() {
         super.onPause()
+        sensorManager.unregisterListener(orientationListener)
         if (mOpenCvCameraView != null)
             mOpenCvCameraView!!.disableView()
     }
 
     override fun onResume() {
         super.onResume()
+        val orientationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION)
+        sensorManager.registerListener(orientationListener, orientationSensor, SensorManager.SENSOR_DELAY_NORMAL)
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback)
@@ -136,14 +180,41 @@ class CalibrateActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2
 //         get current camera frame as OpenCV Mat object
         val mat = frame.gray()
 
-       refObjectPXPerCM = NativeBridge.calibrationFromJNI(mat.nativeObjAddr,6f,0f)
 
+       refObjectPXPerCM = NativeBridge.calibrationFromJNI(mat.nativeObjAddr,width.toFloat(),height.toFloat())
         Log.d(TAG, "refObjectPXPerCM ${refObjectPXPerCM}")
 //         return processed frame for live preview
         return mat
     }
 
-//    private external fun calibrationFromJNI(matAddr: Long,width:Float,height:Float)
+    private fun getCameraDisplayOrientation(cameraId:Int): Int {
+        val manager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val cameraId = manager.cameraIdList[cameraId]
+        val characteristics = manager.getCameraCharacteristics(cameraId)
+
+        val rotation = currentRotation
+        val sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+
+        val landscapeFlip = if (sensorOrientation == 270) 180 else 0
+        return (sensorOrientation - rotation + landscapeFlip) % 360
+    }
+
+//    private fun updateCameraDisplayOrientation() {
+//        val displayRotation = getCameraDisplayOrientation(0)
+//        val camera = (mOpenCvCameraView as JavaCameraView).
+//        if (camera != null) {
+//            try {
+//                camera.setDisplayOrientation(displayRotation)
+//                val params = camera.parameters
+//                params.setRotation(displayRotation)
+//                camera.parameters = params
+//            } catch (e: Exception) {
+//                Log.e(TAG, "Error updating camera display orientation: ", e)
+//            }
+//        }
+//    }
+
+
 
     object NativeBridge {
         init {
