@@ -2,126 +2,130 @@ package com.windula.mv_cpp_android_digital_ruler
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.core.app.ActivityCompat
-import android.util.Log
-import android.view.SurfaceView
-import android.view.WindowManager
+import android.widget.EditText
 import android.widget.Toast
-import org.opencv.android.BaseLoaderCallback
-import org.opencv.android.CameraBridgeViewBase
-import org.opencv.android.LoaderCallbackInterface
-import org.opencv.android.OpenCVLoader
-import org.opencv.core.Mat
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.google.android.material.snackbar.Snackbar
+import com.windula.mv_cpp_android_digital_ruler.databinding.ActivityMainBinding
 
-class MainActivity : Activity(), CameraBridgeViewBase.CvCameraViewListener2 {
 
-    private var mOpenCvCameraView: CameraBridgeViewBase? = null
+class MainActivity : AppCompatActivity() {
 
-    private val mLoaderCallback = object : BaseLoaderCallback(this) {
-        override fun onManagerConnected(status: Int) {
-            when (status) {
-                LoaderCallbackInterface.SUCCESS -> {
-                    Log.i(TAG, "OpenCV loaded successfully")
+    private val CALIBRATE = "CALIBRATE"
+    private val DETECT = "DETECT"
+    private var isCalibrare = false
+    private var isDetect = false
+    private var width:Double = 0.0
+    private var height:Double = 0.0
 
-//                     Load native library after(!) OpenCV initialization
-                    System.loadLibrary("mv_cpp_android_digital_ruler")
+    private lateinit var binding: ActivityMainBinding
 
-                    mOpenCvCameraView!!.enableView()
-                }
-                else -> {
-                    super.onManagerConnected(status)
-                }
-            }
-        }
-    }
+    private var refObjectPXPerCM:String? = "0.000"
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        Log.i(TAG, "called onCreate")
-        super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-//         Permissions for Android 6+
-        ActivityCompat.requestPermissions(
-            this@MainActivity,
-            arrayOf(Manifest.permission.CAMERA),
-            CAMERA_PERMISSION_REQUEST
-        )
-
-        setContentView(R.layout.activity_main)
-
-        mOpenCvCameraView = findViewById<CameraBridgeViewBase>(R.id.main_surface)
-
-        mOpenCvCameraView!!.visibility = SurfaceView.VISIBLE
-
-        mOpenCvCameraView!!.setCvCameraViewListener(this)
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        when (requestCode) {
-            CAMERA_PERMISSION_REQUEST -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mOpenCvCameraView!!.setCameraPermissionGranted()
-                } else {
-                    val message = "Camera permission was not granted"
-                    Log.e(TAG, message)
-                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-                }
-            }
-            else -> {
-                Log.e(TAG, "Unexpected permission request")
-            }
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        if (mOpenCvCameraView != null)
-            mOpenCvCameraView!!.disableView()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (!OpenCVLoader.initDebug()) {
-            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization")
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, mLoaderCallback)
+    private val requestCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            // Permission granted, you can open the camera
+            if (isCalibrare)
+                openCamera(CALIBRATE)
+            if (isDetect)
+                openCamera(DETECT)
         } else {
-            Log.d(TAG, "OpenCV library found inside package. Using it!")
-            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS)
+            // Permission denied, show a message
+            Snackbar.make(binding.mainContainer, "Camera permission is required.", Snackbar.LENGTH_LONG).show()
+        }
+    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
+        val editWidth:EditText = binding.editTextWidth
+        val editHeight:EditText = binding.editTextHeight
+
+        binding.fab1.setOnClickListener {
+            checkCameraPermissionAndOpenCamera(CALIBRATE)
+            isCalibrare=true
+            isDetect = false
+        }
+
+        binding.fab2.setOnClickListener {
+            checkCameraPermissionAndOpenCamera(DETECT)
+            isCalibrare=false
+            isDetect = true
+        }
+
+        binding.buttonSubmit.setOnClickListener{
+            width = editWidth.text.toString().toDouble()
+            height = editHeight.text.toString().toDouble()
+            Toast.makeText(this, "Reference object Width : $width  and Height : $height ", Toast.LENGTH_LONG).show()
+
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (mOpenCvCameraView != null)
-            mOpenCvCameraView!!.disableView()
+    private fun checkCameraPermissionAndOpenCamera(action:String) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            // If permission is already granted, open the camera
+            openCamera(action)
+        } else {
+            // If permission is not granted, request it
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
     }
 
-    override fun onCameraViewStarted(width: Int, height: Int) {}
+    private fun openCamera(action:String) {
+        // Implement the logic to open the camera here
+        // You can use CameraX or another library to handle camera operations
+        Snackbar.make(binding.mainContainer, "Camera opened ", Snackbar.LENGTH_LONG).show()
+        if (action==CALIBRATE){
+            val intent = Intent(this, CalibrateActivity::class.java)
+            intent.putExtra("width",width)
+            intent.putExtra("height",height)
+            calibrateActivityLauncher.launch(intent)
+        }
+        if (action==DETECT){
+            val refObjectPXPerCMDouble: Double? = refObjectPXPerCM?.toDoubleOrNull()
+            if (refObjectPXPerCMDouble != null) {
+                if (refObjectPXPerCMDouble>0){
+                    val intent = Intent(this, DetectActivity::class.java)
+                    intent.putExtra("refObjectPXPerCM",refObjectPXPerCM)
+                    detectActivityLauncher.launch(intent)
+                }
+            }
+            else{
+                Snackbar.make(binding.mainContainer, "Distance calculation cannot be completed", Snackbar.LENGTH_LONG).show()
+            }
 
-    override fun onCameraViewStopped() {}
-
-    override fun onCameraFrame(frame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
-//         get current camera frame as OpenCV Mat object
-        val mat = frame.gray()
-
-//         native call to process current camera frame
-        adaptiveThresholdFromJNI(mat.nativeObjAddr)
-
-//         return processed frame for live preview
-        return mat
+        }
     }
 
-    private external fun adaptiveThresholdFromJNI(matAddr: Long)
-
-    companion object {
-
-        private const val TAG = "MainActivity"
-        private const val CAMERA_PERMISSION_REQUEST = 1
+    private val calibrateActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            if (data != null) {
+                // Extract the data sent from CameraActivity
+                refObjectPXPerCM = data.getStringExtra("refObjectPXPerCM")
+                // Do something with the received data
+                Toast.makeText(this, "Reference object px/cm: $refObjectPXPerCM px/cm", Toast.LENGTH_LONG).show()
+            }
+        }
     }
+
+    private val detectActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            if (data != null) {
+                // Extract the data sent from CameraActivity
+                refObjectPXPerCM = data.getStringExtra("distance")
+                // Do something with the received data
+                Toast.makeText(this, "distance ", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+
 }
