@@ -82,7 +82,7 @@ double calculateDistanceFromPoint2d(cv::Point2d ptA, cv::Point2d ptB) {
     return dist;
 }
 
-void calibrationObject(Mat frame,double width = 6,double height = 3) {
+double calibrationObject(Mat frame,double width = 6,double height = 3) {
 
     double ref_object_px_per_cm = 0;
     HomogeneousBgDetector detector;
@@ -126,5 +126,22 @@ void calibrationObject(Mat frame,double width = 6,double height = 3) {
             ref_object_px_per_cm = ref_object_px / width;
 
         cv::putText(frame, "Reference Object pixels/cm length " + std::to_string(ref_object_px_per_cm), cv::Point(10, 30), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(255, 0, 0), 2);
+    }
+
+    return ref_object_px_per_cm;
+}
+
+void measureDistance(Mat frame,double refPxPerCm) {
+    cv::circle(frame, point1, 3, cv::Scalar(0, 255, 0), -1);
+    cv::putText(frame, "Point 1", point1, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+
+    cv::line(frame, point1, point2, cv::Scalar(255, 0, 0), 2);
+    cv::putText(frame, "Point 2", point2, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 2);
+
+    if (refPxPerCm != 0) {
+        float dist = calculateDistanceFromPoint2d(point1, point2) / refPxPerCm;
+        std::ostringstream dist_str;
+        dist_str << "Distance (cm): " << dist;
+        cv::putText(frame, dist_str.str(), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
     }
 }

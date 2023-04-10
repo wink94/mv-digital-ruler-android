@@ -19,7 +19,7 @@ void   order_points(cv::Point2f points[4], cv::Point2f points_out[4]);
 double calculateDistance(int x1, int y1, int x2, int y2);
 Point2d midpoint(Point2d ptA, Point2d ptB);
 double calculateDistanceFromPoint2d(cv::Point2d ptA, cv::Point2d ptB);
-void calibrationObject(Mat frame,double width ,double height );
+double calibrationObject(Mat frame,double width ,double height );
 
 
 #endif //MV_CPP_ANDROID_DIGITAL_RULER_MAIN_H
